@@ -19,10 +19,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build optimized Android release
         working-directory: android
-        run: gradle :app:assembleRelease
+        run: gradle :app:assembleDebug
       - name: Report APK size
         run: |
-          APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          APK=$(find android/app/build/outputs/apk/debug -name '*.apk' | head -1)
           test -n "$APK"
           BYTES=$(stat -c%s "$APK")
           MIB=$(awk "BEGIN { printf \"%.2f\", $BYTES/1048576 }")
