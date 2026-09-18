@@ -34,11 +34,10 @@ jobs:
             echo "APK exceeds the 8 MiB size budget" >&2
             exit 1
           fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: openclaw-android-release
-          path: android/app/build/outputs/apk/release/*.apk
-
+      -  - uses: actions/upload-artifact@v4
+  with:
+    name: openclaw-android-debug
+    path: android/app/build/outputs/apk/debug/*.apk
   desktop-linux:
     runs-on: ubuntu-latest
     steps:
