@@ -1,0 +1,5 @@
+{
+  "name": "openclaw-mobile",
+  "version-string": "0.8.0-dev",
+  "dependencies": ["fltk", "openssl", "boost-system"]
+}

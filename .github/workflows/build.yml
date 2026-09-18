@@ -1,0 +1,95 @@
+name: build
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  native-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DOPENCLAW_BUILD_GUI=OFF
+      - run: cmake --build build -j2
+      - run: ctest --test-dir build --output-on-failure
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build optimized Android release
+        working-directory: android
+        run: gradle :app:assembleRelease
+      - name: Report APK size
+        run: |
+          APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          test -n "$APK"
+          BYTES=$(stat -c%s "$APK")
+          MIB=$(awk "BEGIN { printf \"%.2f\", $BYTES/1048576 }")
+          echo "Android release APK: $APK"
+          echo "APK_BYTES=$BYTES" >> "$GITHUB_ENV"
+          echo "### Android release size: ${MIB} MiB (${BYTES} bytes)" >> "$GITHUB_STEP_SUMMARY"
+          MAX=$((8 * 1024 * 1024))
+          if [ "$BYTES" -gt "$MAX" ]; then
+            echo "APK exceeds the 8 MiB size budget" >&2
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-android-release
+          path: android/app/build/outputs/apk/release/*.apk
+
+  desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libfltk1.3-dev
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DOPENCLAW_BUILD_GUI=ON
+      - run: cmake --build build -j2 --target openclaw-gui
+      - run: strip build/openclaw-gui || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-desktop-linux
+          path: build/openclaw-gui
+
+  desktop-macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install fltk
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DOPENCLAW_BUILD_GUI=ON
+      - run: cmake --build build -j2 --target openclaw-gui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-desktop-macos
+          path: build/openclaw-gui.app
+
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: lukka/run-vcpkg@v11
+        with:
+          runVcpkgInstall: true
+          vcpkgJsonGlob: 'vcpkg.json'
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DOPENCLAW_BUILD_GUI=ON -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+      - run: cmake --build build --config Release --target openclaw-gui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openclaw-desktop-windows
+          path: build/Release/openclaw-gui.exe
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iOS simulator app
+        run: |
+          xcodebuild \
+            -project ios/OpenClawMobile.xcodeproj \
+            -scheme OpenClawMobile \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build

@@ -1,0 +1,39 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; attributes = {LastSwiftUpdateCheck = 1600; LastUpgradeCheck = 1600;}; buildConfigurationList = A00000000000000000000002; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A00000000000000000000003; productRefGroup = A00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000005,); };
+  A00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000020,A00000000000000000000021); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000010,A00000000000000000000004); sourceTree = "<group>";};
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000006,); name = Products; sourceTree = "<group>";};
+  A00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000007; buildPhases = (A00000000000000000000008,A00000000000000000000009); buildRules = (); dependencies = (); name = OpenClawMobile; productName = OpenClawMobile; productReference = A00000000000000000000006; productType = "com.apple.product-type.application";};
+  A00000000000000000000006 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenClawMobile.app; sourceTree = BUILT_PRODUCTS_DIR;};
+  A00000000000000000000007 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000022,A00000000000000000000023); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  A00000000000000000000008 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000030,A00000000000000000000031,A00000000000000000000032,A00000000000000000000033,A00000000000000000000034,A00000000000000000000035,A00000000000000000000036); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000009 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000010 = {isa = PBXGroup; children = (A00000000000000000000011,A00000000000000000000012,A00000000000000000000013,A00000000000000000000014,A00000000000000000000015,A00000000000000000000016,A00000000000000000000017,A00000000000000000000018,A00000000000000000000019); path = OpenClawMobile; sourceTree = "<group>";};
+  A00000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/OpenClawMobileApp.swift; sourceTree = "<group>";};
+  A00000000000000000000012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppModel.swift; sourceTree = "<group>";};
+  A00000000000000000000013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Models.swift; sourceTree = "<group>";};
+  A00000000000000000000014 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DeviceIdentityStore.swift; sourceTree = "<group>";};
+  A00000000000000000000015 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/TranscriptCache.swift; sourceTree = "<group>";};
+  A00000000000000000000016 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/GatewayClient.swift; sourceTree = "<group>";};
+  A00000000000000000000017 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UI/ChatView.swift; sourceTree = "<group>";};
+  A00000000000000000000018 = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>";};
+  A00000000000000000000019 = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = OpenClawMobile.entitlements; sourceTree = "<group>";};
+  A00000000000000000000020 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Debug;};
+  A00000000000000000000021 = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0;}; name = Release;};
+  A00000000000000000000022 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CODE_SIGNING_ALLOWED = NO; CURRENT_PROJECT_VERSION = 7; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = OpenClawMobile/Resources/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 0.7.0; PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.mobile; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = YES; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2";}; name = Debug;};
+  A00000000000000000000023 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CODE_SIGNING_ALLOWED = NO; CURRENT_PROJECT_VERSION = 7; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = OpenClawMobile/Resources/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 0.7.0; PRODUCT_BUNDLE_IDENTIFIER = ai.openclaw.mobile; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = YES; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release;};
+  A00000000000000000000030 = {isa = PBXBuildFile; fileRef = A00000000000000000000011;};
+  A00000000000000000000031 = {isa = PBXBuildFile; fileRef = A00000000000000000000012;};
+  A00000000000000000000032 = {isa = PBXBuildFile; fileRef = A00000000000000000000013;};
+  A00000000000000000000033 = {isa = PBXBuildFile; fileRef = A00000000000000000000014;};
+  A00000000000000000000034 = {isa = PBXBuildFile; fileRef = A00000000000000000000015;};
+  A00000000000000000000035 = {isa = PBXBuildFile; fileRef = A00000000000000000000016;};
+  A00000000000000000000036 = {isa = PBXBuildFile; fileRef = A00000000000000000000017;};
+ };
+ rootObject = A00000000000000000000001;
+}

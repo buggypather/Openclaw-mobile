@@ -1,0 +1,24 @@
+#include "openclaw/gateway_protocol.hpp"
+#include <cctype>
+#include <sstream>
+namespace openclaw {
+namespace {
+std::string str(const std::string& j,const std::string& key){
+ auto p=j.find("\""+key+"\""); if(p==std::string::npos)return{}; p=j.find(':',p); if(p==std::string::npos)return{}; p=j.find('"',p); if(p==std::string::npos)return{}; ++p; std::string o; bool esc=false;
+ for(;p<j.size();++p){char c=j[p]; if(esc){switch(c){case'n':o+='\n';break;case'r':o+='\r';break;case't':o+='\t';break;default:o+=c;}esc=false;}else if(c=='\\')esc=true;else if(c=='"')break;else o+=c;} return o;
+}
+std::optional<long long> integer(const std::string& j,const std::string& key){auto p=j.find("\""+key+"\"");if(p==std::string::npos)return{};p=j.find(':',p);if(p==std::string::npos)return{};++p;while(p<j.size()&&std::isspace((unsigned char)j[p]))++p;size_t e=p;if(e<j.size()&&j[e]=='-')++e;while(e<j.size()&&std::isdigit((unsigned char)j[e]))++e;if(e==p)return{};try{return std::stoll(j.substr(p,e-p));}catch(...){return{};}}
+std::string raw(const std::string& j,const std::string& key){auto p=j.find("\""+key+"\"");if(p==std::string::npos)return{};p=j.find(':',p);if(p==std::string::npos)return{};++p;while(p<j.size()&&std::isspace((unsigned char)j[p]))++p; if(p>=j.size())return{}; if(j[p]=='"')return str(j,key); if(j[p]!='{'&&j[p]!='['){auto e=j.find_first_of(",}",p);return j.substr(p,e-p);} char open=j[p],close=open=='{'?'}':']';int d=0;bool q=false,esc=false;for(size_t e=p;e<j.size();++e){char c=j[e];if(q){if(esc)esc=false;else if(c=='\\')esc=true;else if(c=='"')q=false;}else{if(c=='"')q=true;else if(c==open)++d;else if(c==close&&--d==0)return j.substr(p,e-p+1);}}return{};}
+}
+std::string GatewayProtocol::escape(const std::string& s){std::string o;for(unsigned char c:s){switch(c){case'"':o+="\\\"";break;case'\\':o+="\\\\";break;case'\n':o+="\\n";break;case'\r':o+="\\r";break;case'\t':o+="\\t";break;default:if(c<0x20){char b[7];snprintf(b,sizeof b,"\\u%04x",c);o+=b;}else o+=(char)c;}}return o;}
+std::string GatewayProtocol::request(const std::string&id,const std::string&m,const std::string&p){return "{\"type\":\"req\",\"id\":\""+escape(id)+"\",\"method\":\""+escape(m)+"\",\"params\":"+p+"}";}
+std::string GatewayProtocol::connect(const std::string&id,const std::string&token,const std::string&platform,const std::string&device){std::string p="{\"minProtocol\":4,\"maxProtocol\":4,\"client\":{\"id\":\"cli\",\"version\":\"0.2.0-dev\",\"platform\":\""+escape(platform)+"\",\"mode\":\"operator\"},\"role\":\"operator\",\"scopes\":[\"operator.read\",\"operator.write\",\"operator.approvals\"],\"caps\":[],\"commands\":[],\"permissions\":{},\"auth\":{\"token\":\""+escape(token)+"\"},\"locale\":\"en-US\",\"userAgent\":\"openclaw-mobile/0.4.0-dev\"";if(!device.empty())p+=",\"device\":"+device;p+="}";return request(id,"connect",p);}
+std::string GatewayProtocol::chat_send(const std::string&id,const std::string&key,const std::string&msg,const std::string&idem,const std::string&sid,const std::string&attachments){std::string p="{\"sessionKey\":\""+escape(key)+"\",\"message\":\""+escape(msg)+"\",\"idempotencyKey\":\""+escape(idem)+"\"";if(!sid.empty())p+=",\"sessionId\":\""+escape(sid)+"\"";if(!attachments.empty())p+=",\"attachments\":"+attachments;p+="}";return request(id,"chat.send",p);}
+std::string GatewayProtocol::chat_abort(const std::string&id,const std::string&key,const std::string&run){std::string p="{\"sessionKey\":\""+escape(key)+"\"";if(!run.empty())p+=",\"runId\":\""+escape(run)+"\"";p+="}";return request(id,"chat.abort",p);}
+std::string GatewayProtocol::chat_history(const std::string&id,const std::string&key,int limit){return request(id,"chat.history","{\"sessionKey\":\""+escape(key)+"\",\"limit\":"+std::to_string(limit)+"}");}
+std::string GatewayProtocol::sessions_list(const std::string&id,int limit){return request(id,"sessions.list","{\"limit\":"+std::to_string(limit)+",\"ownerFirst\":true}");}
+std::string GatewayProtocol::sessions_subscribe(const std::string&id,int limit){return request(id,"sessions.subscribe","{\"limit\":"+std::to_string(limit)+",\"ownerFirst\":true}");}
+std::string GatewayProtocol::health(const std::string&id){return request(id,"health","{}");}
+Frame GatewayProtocol::parse(const std::string&j){Frame f;auto t=str(j,"type");f.id=str(j,"id");if(t=="res"){f.kind=Frame::Kind::Response;f.ok=j.find("\"ok\":true")!=std::string::npos;f.payload=raw(j,"payload");f.error=raw(j,"error");}else if(t=="event"){f.kind=Frame::Kind::Event;f.event=str(j,"event");f.payload=raw(j,"payload");auto s=integer(j,"seq");if(s&&*s>=0)f.seq=(uint64_t)*s;}return f;}
+std::optional<Challenge> GatewayProtocol::challenge(const std::string&j){auto f=parse(j);if(f.kind!=Frame::Kind::Event||f.event!="connect.challenge")return{};Challenge c;c.nonce=str(f.payload,"nonce");auto t=integer(f.payload,"ts");if(c.nonce.empty()||!t||*t<0)return{};c.ts=*t;return c;}
+}

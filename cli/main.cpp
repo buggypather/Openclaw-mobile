@@ -1,0 +1,26 @@
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <openssl/evp.h>
+#include "openclaw/gateway_client.hpp"
+using namespace openclaw;
+static void usage(){std::cout<<"OpenClaw Mobile CLI 0.8.0-dev\n"
+<<"  openclaw-mobile connect [ws://host:port]\n"
+<<"  openclaw-mobile health [url]\n"
+<<"  openclaw-mobile sessions [url]\n"
+<<"  openclaw-mobile chat <sessionKey> <message> [url]\n"
+<<"  openclaw-mobile chat-file <sessionKey> <message> <path> [mime] [url]\n"
+<<"  openclaw-mobile abort <sessionKey> [runId] [url]\n"
+<<"  openclaw-mobile shell [url]\n"
+<<"  openclaw-mobile hydrate <sessionKey> [url]\n"
+<<"  openclaw-mobile identity | clear-device-token\n";}
+static std::string env(const char*n,const char*d=""){auto*p=std::getenv(n);return p?p:d;}
+static int open(GatewayClient& c){auto r=c.connect();if(r.state==ConnectResult::State::Connected){std::cout<<"Connected and authenticated.\n";return 0;}if(r.state==ConnectResult::State::PairingRequired){std::cerr<<"PAIRING_REQUIRED\nrequestId="<<r.requestId<<"\nApprove on the Gateway host:\n  openclaw devices approve "<<r.requestId<<"\nThen run this command again.\n";if(!r.message.empty())std::cerr<<"Gateway: "<<r.message<<"\n";return 2;}std::cerr<<"Connection failed: "<<r.message<<"\n";return 1;}
+static std::string json_escape(const std::string&s){return GatewayProtocol::escape(s);}
+static std::string b64(const std::string& data){std::string out(4*((data.size()+2)/3),'\0');auto n=EVP_EncodeBlock(reinterpret_cast<unsigned char*>(out.data()),reinterpret_cast<const unsigned char*>(data.data()),(int)data.size());out.resize((size_t)n);return out;}
+static std::string attachment_json(const std::string&path,const std::string&mime){std::ifstream f(path,std::ios::binary);if(!f)throw std::runtime_error("cannot open attachment: "+path);std::ostringstream ss;ss<<f.rdbuf();auto pos=path.find_last_of("/\\");auto name=pos==std::string::npos?path:path.substr(pos+1);return "[{\"type\":\"file\",\"mimeType\":\""+json_escape(mime)+"\",\"fileName\":\""+json_escape(name)+"\",\"content\":\""+b64(ss.str())+"\"}]";}
+int main(int argc,char**argv){try{DeviceStore store;std::string bootstrap=env("OPENCLAW_GATEWAY_TOKEN");if(argc<2){usage();return 0;}std::string cmd=argv[1];if(cmd=="identity"){auto d=store.load_or_create_identity();std::cout<<"deviceId="<<d.deviceId<<"\npublicKey="<<d.publicKeyBase64Url<<"\nstorage="<<store.root()<<"\n";return 0;}if(cmd=="clear-device-token"){store.clear_token();std::cout<<"Stored device token cleared.\n";return 0;}
+ auto url=[&](int i){return argc>i?std::string(argv[i]):env("OPENCLAW_GATEWAY_URL","ws://127.0.0.1:18789");};
+ if(cmd=="connect"){GatewayClient c(url(2),store,bootstrap);return open(c);}if(cmd=="health"){GatewayClient c(url(2),store,bootstrap);if(auto x=open(c))return x;std::cout<<c.call("health")<<"\n";return 0;}if(cmd=="sessions"){GatewayClient c(url(2),store,bootstrap);if(auto x=open(c))return x;std::cout<<c.call("sessions.list","{\"limit\":60,\"ownerFirst\":true}")<<"\n";return 0;}if(cmd=="hydrate"&&argc>=3){GatewayClient c(url(3),store,bootstrap);if(auto x=open(c))return x;auto h=c.hydrate(argv[2],200);std::cout<<"sessions="<<h.sessions<<"\nhistory="<<h.history<<"\n";return 0;}if(cmd=="chat"&&argc>=4){GatewayClient c(url(4),store,bootstrap);if(auto x=open(c))return x;std::cout<<c.send_chat(argv[2],argv[3])<<"\n";c.pump([](const Frame&f,const std::string&raw){if(f.event=="agent"||f.event=="chat"||f.event=="session.message")std::cout<<raw<<"\n";},std::chrono::seconds(2));return 0;}if(cmd=="chat-file"&&argc>=5){auto mime=argc>5?argv[5]:"application/octet-stream";GatewayClient c(url(6),store,bootstrap);if(auto x=open(c))return x;auto att=attachment_json(argv[4],mime);std::cout<<c.send_chat(argv[2],argv[3],{},att)<<"\n";return 0;}if(cmd=="abort"&&argc>=3){std::string run=argc>3?argv[3]:"";GatewayClient c(url(4),store,bootstrap);if(auto x=open(c))return x;std::cout<<c.abort_chat(argv[2],run)<<"\n";return 0;}if(cmd=="shell"){GatewayClient c(url(2),store,bootstrap);if(auto x=open(c))return x;std::string key=env("OPENCLAW_SESSION_KEY","main"),line;auto h=c.hydrate(key,200);std::cout<<"Hydrated history: "<<h.history<<"\nInteractive chat session: "<<key<<" (type /quit, /pause or /stop)\n";while(std::cout<<"> "&&std::getline(std::cin,line)&&line!="/quit"){if(line.empty())continue;if(line=="/pause"||line=="/stop"){try{std::cout<<c.abort_chat(key)<<"\n";}catch(const std::exception&e){std::cerr<<"Abort failed: "<<e.what()<<"\n";}continue;}if(!c.connected()){auto rr=c.reconnect(key);if(rr.state!=ConnectResult::State::Connected){std::cerr<<"Reconnect failed: "<<rr.message<<"\n";continue;}}std::cout<<c.send_chat(key,line)<<"\n";c.pump([](const Frame&f,const std::string&raw){if(f.event=="agent"||f.event=="chat"||f.event=="session.message"||f.event=="sessions.changed")std::cout<<raw<<"\n";},std::chrono::seconds(2));if(c.recovery_needed()){std::cerr<<"Event gap/disconnect detected; reconnecting and reloading authoritative history...\n";auto rr=c.reconnect(key);if(rr.state!=ConnectResult::State::Connected)std::cerr<<"Recovery failed: "<<rr.message<<"\n";}}return 0;}usage();return 1;}catch(const std::exception&e){std::cerr<<"error: "<<e.what()<<"\n";return 1;}}
